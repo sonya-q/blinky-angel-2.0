@@ -1,59 +1,82 @@
 console.log('Blinky Angel content script loaded on:', window.location.hostname);
 
 // ==============================================
-// PART 1: SCRIPT LOADING FUNCTIONS
+// PART 1: INJECT TENSORFLOW INTO PAGE
 // ==============================================
 
-function checkTensorFlowLoaded() {
-  if (typeof tf === 'undefined') {
-    console.error('TensorFlow not loaded!');
+function injectScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL(src);
+    script.onload = () => {
+      console.log(`Injected: ${src}`);
+      resolve();
+    };
+    script.onerror = () => {
+      console.error(`Failed to inject: ${src}`);
+      reject();
+    };
+    (document.head || document.documentElement).appendChild(script);
+  });
+}
+
+async function injectTensorFlow() {
+  console.log('Injecting TensorFlow into page...');
+  
+  try {
+    // Inject TensorFlow
+    await injectScript('libs/tf.min.js');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Inject Face Landmarks Detection
+    await injectScript('libs/face-landmarks-detection.min.js');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Inject our detector script
+    await injectScript('detector.js');
+    
+    console.log('All scripts injected!');
+    return true;
+    
+  } catch (error) {
+    console.error('Error injecting scripts:', error);
     return false;
   }
-  
-  if (typeof faceLandmarksDetection === 'undefined') {
-    console.error('Face Landmarks Detection not loaded!');
-    return false;
-  }
-  
-  console.log('TensorFlow loaded! Version:', tf.version.tfjs);
-  console.log('Face Landmarks Detection loaded!');
-  return true;
 }
 
 // ==============================================
-// PART 2: INITIALIZATION
+// PART 2: COMMUNICATE W DETECTOR
 // ==============================================
 
-let model = null;
-let isInitialized = false;
+let isModelReady = false;
 
-async function initializeBlinkyAngel() {
-  console.log('Initializing Blinky Angel...');
+// Listen for messages from detector.js (running in page context)
+window.addEventListener('message', (event) => {
+  // Only accept messages from same window
+  if (event.source !== window) return;
   
-  // Load TensorFlow
-  const tfLoaded = await loadTensorFlow();
-  if (!tfLoaded) {
-    console.error('Failed to load TensorFlow. Stopping initialization.');
-    showErrorNotification('Failed to load AI libraries');
-    return;
+  const message = event.data;
+  
+  if (message.type === 'BLINKY_MODEL_READY') {
+    if (message.ready) {
+      isModelReady = true;
+      console.log('🎉 Model is ready!');
+      showSuccessNotification('Blinky Angel ready!');
+    } else {
+      console.error('❌ Model failed to load:', message.error);
+      showErrorNotification('Failed to load AI model');
+    }
   }
   
-  // Wait a bit for everything to settle
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Load the model
-  model = await loadFaceMeshModel();
-  if (!model) {
-    console.error('Failed to load FaceMesh model. Stopping initialization.');
-    showErrorNotification('Failed to load face detection model');
-    return;
+  if (message.type === 'BLINKY_MODEL_STATUS') {
+    isModelReady = message.ready;
+    console.log('Model status:', isModelReady);
   }
-  
-  isInitialized = true;
-  console.log('Blinky Angel fully initialized!');
-  showSuccessNotification('Blinky Angel ready!');
+});
+
+function checkModelReady() {
+  window.postMessage({ type: 'BLINKY_CHECK_READY' }, '*');
 }
-
 // ==============================================
 // PART 3: NOTIFICATIONS (For Testing)
 // ==============================================
@@ -110,24 +133,43 @@ function showErrorNotification(message) {
 // PART 4: START EVERYTHING
 // ==============================================
 
-// Wait for page to be fully loaded
+async function initialize() {
+  console.log('Initializing Blinky Angel...');
+  
+  // Inject TensorFlow into page
+  const injected = await injectTensorFlow();
+  
+  if (!injected) {
+    console.error('Failed to inject TensorFlow');
+    showErrorNotification('Failed to load AI libraries');
+    return;
+  }
+  
+  console.log('Waiting for model to load...');
+  
+  // Check model status after a delay
+  setTimeout(() => {
+    checkModelReady();
+  }, 3000);
+}
+
+// Start when page is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeBlinkyAngel);
+  document.addEventListener('DOMContentLoaded', initialize);
 } else {
-  // Page already loaded, start immediately
-  initializeBlinkyAngel();
+  initialize();
 }
 
 // Listen for messages from background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('Content script received message:', message);
+  console.log('Content script received:', message);
   
   if (message.type === 'CHECK_STATUS') {
     sendResponse({ 
-      initialized: isInitialized,
-      modelLoaded: model !== null 
+      initialized: true,
+      modelReady: isModelReady 
     });
   }
 });
 
-console.log('Content script setup complete, waiting for page load...');
+console.log('Content script setup complete!');
