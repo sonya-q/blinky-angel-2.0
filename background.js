@@ -16,7 +16,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   console.log("Background message received");
   if (msg.type === "GET_SETTINGS"){
     // get settings from storage
-    chrome.local.storage.get(['enabled', 'mode', 'breakInterval'], (result) => {
+    chrome.storage.local.get(['enabled', 'mode', 'breakInterval'], (result) => {
       console.log("Got settings: ", result);
       sendResponse(result);
     });
@@ -27,14 +27,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // save new settings
     chrome.storage.local.set(msg.settings, () => {
       console.log("Updating settings", msg.settings);
-      sendResponse({success: True});
+      sendResponse({success: true});
     })
     return true;
   };
 
   if (msg.type === "BLINK_DETECTED"){
     console.log("Blink detected! Count: ", msg.count);
-    sendResponse({received: True});
+    sendResponse({received: true});
   };
 });
 
