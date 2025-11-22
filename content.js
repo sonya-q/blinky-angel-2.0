@@ -6,6 +6,18 @@ function showTestNotification() {
   notification.id = 'blinky-test';
   notification.textContent = 'Blinky Angel is watching this page!';
   notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: pink;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    z-index: 999999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     animation: slideIn 0.3s ease-out;
   `;
   
