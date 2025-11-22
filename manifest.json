@@ -1,0 +1,21 @@
+{
+  "name": "Blinky Angel",
+  "description": "version 2.0, completely hand-coded",
+  "version": "2.0",
+  "manifest_version": 3,
+
+  "permissions": ["tabs"],
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_popup": "./popup/popup.html",
+    "default_icon": "./assets/eye.png"
+  },
+
+  "content-scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"]
+  }]
+}
