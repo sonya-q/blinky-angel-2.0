@@ -4,70 +4,20 @@ console.log('Blinky Angel content script loaded on:', window.location.hostname);
 // PART 1: SCRIPT LOADING FUNCTIONS
 // ==============================================
 
-function loadScript(url) {
-  return new Promise((resolve, reject) => {
-    console.log(`Loading: ${url}`);
-    const script = document.createElement('script');
-    script.src = url;
-    script.onload = () => {
-      console.log(`Loaded: ${url}`);
-      resolve();
-    };
-    script.onerror = () => {
-      console.error(`Failed to load: ${url}`);
-      reject(new Error(`Failed to load ${url}`));
-    };
-    document.head.appendChild(script);
-  });
-}
-
-async function loadTensorFlow() {
-  console.log('Starting TensorFlow.js loading...');
-  
-  try {
-    // Load TensorFlow core
-    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core');
-    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter');
-    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl');
-    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs');
-    
-    console.log('TensorFlow.js loaded!');
-    console.log('TensorFlow version:', tf.version.tfjs);
-    
-    // Load Face Landmarks Detection model
-    await loadScript('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh');
-    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection');
-    
-    console.log('✅ Face Landmarks Detection library loaded!');
-    
-    return true;
-  } catch (error) {
-    console.error('Error loading TensorFlow:', error);
+function checkTensorFlowLoaded() {
+  if (typeof tf === 'undefined') {
+    console.error('TensorFlow not loaded!');
     return false;
   }
-}
-
-async function loadFaceMeshModel() {
-  console.log('Loading FaceMesh model...');
   
-  try {
-    const model = await faceLandmarksDetection.createDetector(
-      faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
-      {
-        runtime: 'tfjs',
-        maxFaces: 1,
-        refineLandmarks: true
-      }
-    );
-    
-    console.log('FaceMesh model loaded successfully!');
-    console.log('Model ready to detect faces!');
-    
-    return model;
-  } catch (error) {
-    console.error('Error loading FaceMesh model:', error);
-    return null;
+  if (typeof faceLandmarksDetection === 'undefined') {
+    console.error('Face Landmarks Detection not loaded!');
+    return false;
   }
+  
+  console.log('TensorFlow loaded! Version:', tf.version.tfjs);
+  console.log('Face Landmarks Detection loaded!');
+  return true;
 }
 
 // ==============================================
