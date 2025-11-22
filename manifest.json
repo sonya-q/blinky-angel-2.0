@@ -4,7 +4,7 @@
   "version": "2.0",
   "manifest_version": 3,
 
-  "permissions": ["tabs"],
+  "permissions": ["tabs", "storage", "activeTab"],
   "background": {
     "service_worker": "background.js"
   },
@@ -14,7 +14,7 @@
     "default_icon": "./assets/eye.png"
   },
 
-  "content-scripts": [{
+  "content_scripts": [{
     "matches": ["<all_urls>"],
     "js": ["content.js"]
   }]
